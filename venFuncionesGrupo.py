@@ -1,6 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
 from pymongo import MongoClient as MC
+import csv
+import json
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
+import os
+from datetime import datetime
 
 ventana = tk.Tk()
 ventana.title("Agregar Grupo")
@@ -158,19 +164,137 @@ def EliminarGrupo():
 btn_borrarGrupo= tk.Button(ventana, text="Eliminar", font=("Arial",12,"bold"), bg="white", fg="black", command=EliminarGrupo)
 btn_borrarGrupo.grid(row=3, column=2, padx=10, pady=5)
 
+
+##Método para todos
+def generarNombreArchivo(extension):
+    carpeta = r"C:\Backup_Mongo"
+    os.makedirs(carpeta, exist_ok=True)  # crea la carpeta si no existe
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    
+    return os.path.join(carpeta, f"grupos_{timestamp}.{extension}")
+
+
 #Exportar csv
+def exportarCsv():
+    grupos = list(Grupos.find())
+ 
+    if not grupos:
+        messagebox.showwarning("Atención", "No hay grupos para exportar.")
+        return
+ 
+    nombre_archivo = generarNombreArchivo("csv")
+ 
+    with open(nombre_archivo, mode="w", newline="", encoding="utf-8") as archivo:
+        escritor = csv.writer(archivo)
+        # Encabezado
+        escritor.writerow(["cveGru", "nomGru"])
+        # Filas
+        for grupo in grupos:
+            escritor.writerow([grupo["cveGru"], grupo["nomGru"]])
+ 
+    ruta = os.path.abspath(nombre_archivo)
+    messagebox.showinfo("Exportado", f"Archivo CSV generado exitosamente:\n{ruta}")
 
 
-btn_exportarCsv = tk.Button(ventana, text="Exportar csv", font=("Arial",12, "bold"), bg="white", fg="black")
+
+
+btn_exportarCsv = tk.Button(ventana, text="Exportar csv", font=("Arial",12, "bold"), bg="white", fg="black", command=exportarCsv)
 btn_exportarCsv.grid(row=4, column=0,padx=10, pady=5 )
 #Exportar json
-btn_exportarJson = tk.Button(ventana, text="Exportar json", font=("Arial",12, "bold"), bg="white", fg="black")
+def exportarJson():
+    grupos = list(Grupos.find())
+ 
+    if not grupos:
+        messagebox.showwarning("Atención", "No hay grupos para exportar.")
+        return
+ 
+    # Convertir ObjectId de MongoDB a string para que sea serializable
+    for grupo in grupos:
+        grupo["_id"] = str(grupo["_id"])
+ 
+    nombre_archivo = generarNombreArchivo("json")
+ 
+    with open(nombre_archivo, mode="w", encoding="utf-8") as archivo:
+        json.dump(grupos, archivo, ensure_ascii=False, indent=4)
+        ##ensure_ascii permite caracteres especiales y ident
+ 
+    ruta = os.path.abspath(nombre_archivo)
+    messagebox.showinfo("Exportado", f"Archivo JSON generado exitosamente:\n{ruta}")
+ 
+
+
+
+btn_exportarJson = tk.Button(ventana, text="Exportar json", font=("Arial",12, "bold"), bg="white", fg="black", command=exportarJson)
 btn_exportarJson.grid(row=4, column=1,padx=10, pady=5 )
 #Exportar xml
+def exportarXml():
+    grupos = list(Grupos.find())
+ 
+    if not grupos:
+        messagebox.showwarning("Atención", "No hay grupos para exportar.")
+        return
+ 
+    # Crear estructura XML
+    raiz = ET.Element("Grupos")
+ 
+    for grupo in grupos:
+        nodo_grupo = ET.SubElement(raiz, "Grupo")
+        nodo_cve = ET.SubElement(nodo_grupo, "cveGru")
+        nodo_cve.text = grupo["cveGru"]
+        nodo_nom = ET.SubElement(nodo_grupo, "nomGru")
+        nodo_nom.text = grupo["nomGru"]
+ 
+    # Formatear el XML con sangría para que sea legible
+    xml_str = minidom.parseString(ET.tostring(raiz, encoding="unicode")).toprettyxml(indent="  ")
+ 
+    # Eliminar la línea extra que agrega toprettyxml al inicio
+    lineas = xml_str.split("\n")
+    xml_formateado = "\n".join(lineas[1:])  # quita '<?xml version="1.0" ?>' duplicado si lo hubiera
+ 
+    nombre_archivo = generarNombreArchivo("xml")
+ 
+    with open(nombre_archivo, mode="w", encoding="utf-8") as archivo:
+        archivo.write('<?xml version="1.0" encoding="utf-8"?>\n')
+        archivo.write(xml_formateado)
+ 
+    ruta = os.path.abspath(nombre_archivo)
+    messagebox.showinfo("Exportado", f"Archivo XML generado exitosamente:\n{ruta}")
 
-btn_exportarXml = tk.Button(ventana, text="Exportar xml", font=("Arial",12, "bold"), bg="white", fg="black")
+
+btn_exportarXml = tk.Button(ventana, text="Exportar xml", font=("Arial",12, "bold"), bg="white", fg="black", command=exportarXml)
 btn_exportarXml.grid(row=4, column=2,padx=10, pady=5 )
 
-
+def ejecutarBackup():
+    grupos = list(Grupos.find())
+ 
+    if not grupos:
+        messagebox.showwarning("Atención", "No hay grupos para respaldar.")
+        return
+ 
+    # Crear carpeta backups/ si no existe
+    carpeta_backup = "C:\Backup_Mongo\Backups_Grupos"
+    os.makedirs(carpeta_backup, exist_ok=True)
+ 
+    # Subcarpeta con timestamp para este backup
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    subcarpeta = os.path.join(carpeta_backup, f"backup_{timestamp}")
+    os.makedirs(subcarpeta)
+ 
+    # Convertir ObjectId a string
+    for grupo in grupos:
+        grupo["_id"] = str(grupo["_id"])
+ 
+    # Guardar como JSON dentro de la subcarpeta
+    ruta_archivo = os.path.join(subcarpeta, "grupos.json")
+    with open(ruta_archivo, mode="w", encoding="utf-8") as archivo:
+        json.dump(grupos, archivo, ensure_ascii=False, indent=4)
+ 
+    ruta = os.path.abspath(subcarpeta)
+    messagebox.showinfo("Backup exitoso", f"Backup realizado correctamente.\nUbicación:\n{ruta}")
+ 
+ 
+btn_backup = tk.Button(ventana, text="Ejecutar Backup", font=("Arial",12, "bold"), bg="white", fg="black", command=ejecutarBackup)
+btn_backup.grid(row=6, column=0, columnspan=3, sticky="we", padx=10, pady=5)
 
 ventana.mainloop()
