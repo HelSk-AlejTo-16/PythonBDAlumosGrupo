@@ -1,6 +1,6 @@
 import os
 from datetime import datetime 
-from db import Grupos
+from db import Grupos, Alumnos
 from tkinter import messagebox
 import tkinter as tk
 
@@ -103,9 +103,19 @@ def EliminarGrupo(ent_cveGru, ent_nomGru):
             ent_nomGru.delete(0, tk.END)
         
         else:
-            Grupos.delete_one({"cveGru":clave, "nomGru":nombre})
-            messagebox.showinfo("Éxito", "Se borró exitosamente el grupo")
-            ##Falta borrar los alumnos :p
+            # Eliminar todos los alumnos relacionados a este grupo
+            cantidad_alumnos_eliminados = Alumnos.delete_many({"cveGru": clave}).deleted_count
+            
+            # Eliminar el grupo
+            Grupos.delete_one({"cveGru": clave, "nomGru": nombre})
+            
+            if cantidad_alumnos_eliminados > 0:
+                messagebox.showinfo("Éxito", f"Se borró exitosamente el grupo y {cantidad_alumnos_eliminados} alumno(s) asociado(s)")
+            else:
+                messagebox.showinfo("Éxito", "Se borró exitosamente el grupo")
+            
+            ent_cveGru.delete(0, tk.END)
+            ent_nomGru.delete(0, tk.END)
     elif clave or nombre:
             messagebox.showerror("Atención", "Por favor llene ambos campos.")
 
