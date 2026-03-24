@@ -1,11 +1,11 @@
 import os
 from datetime import datetime
 import subprocess 
-from db import Alumnos, Grupos
+from dbAlu import Grupos, Alumnos
 from tkinter import filedialog, messagebox
 import tkinter as tk
 
-##Método para todos
+# Método para todos
 def generarNombreArchivo(extension):
     carpeta = r"C:\Backup_Mongo"
     os.makedirs(carpeta, exist_ok=True)  # crea la carpeta si no existe
@@ -14,104 +14,118 @@ def generarNombreArchivo(extension):
 
 # Función para validar que el grupo exista
 def validarGrupo(cveGru):
-    return Grupos.find_one({"cveGru": cveGru}) is not None
+    # Buscamos ignorando espacios extra al inicio/final
+    return Grupos.find_one({"cveGru": cveGru.strip()}) is not None
 
 # Función para agregar alumno
 def Agregar(ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru):
-    if not ent_cveAlu.get():
+    clave = ent_cveAlu.get().strip()
+    nombre = ent_nomAlu.get().strip()
+    edad = ent_edaAlu.get().strip()
+    grupo = ent_cveGru.get().strip()
+
+    if not clave:
         messagebox.showerror("Error", "Por favor, ingresa la clave del alumno")
         return
-    
-    if not ent_nomAlu.get():
+    if not nombre:
         messagebox.showerror("Error", "Por favor, ingresa el nombre del alumno")
         return
-    
-    if not ent_edaAlu.get():
+    if not edad:
         messagebox.showerror("Error", "Por favor, ingresa la edad del alumno")
         return
-    
-    if not ent_cveGru.get():
+    if not grupo:
         messagebox.showerror("Error", "Por favor, ingresa la clave del grupo")
         return
     
-    # Validar que la clave del alumno sea única
+    # Validar que la clave y edad sean números enteros
     try:
-        cveAlu_int = int(ent_cveAlu.get())
-        edaAlu_int = int(ent_edaAlu.get())
+        cveAlu_int = int(clave)
+        edaAlu_int = int(edad)
     except ValueError:
-        messagebox.showerror("Error", "La clave y edad deben ser números")
+        messagebox.showerror("Error", "La clave y la edad deben ser datos numéricos.")
         return
     
+    # Validar que el grupo exista en la BD
+    if not validarGrupo(grupo):
+        messagebox.showerror("Error", f"El grupo '{grupo}' no existe. Regístralo primero.")
+        return
+
+    # Validar que la clave del alumno sea única
     if Alumnos.find_one({"cveAlu": cveAlu_int}) is not None:
-        messagebox.showerror("Error", "Ya existe un alumno con la clave proporcionada")
+        messagebox.showerror("Error", "Ya existe un alumno con la clave proporcionada.")
         return
     
-    # Validar que el grupo exista
-    if not validarGrupo(ent_cveGru.get()):
-        messagebox.showerror("Error", "El grupo ingresado no existe")
-        return
-    
+    # Inserción
     Alumnos.insert_one({
         "cveAlu": cveAlu_int, 
-        "nomAlu": ent_nomAlu.get(), 
+        "nomAlu": nombre, 
         "edaAlu": edaAlu_int,
-        "cveGru": ent_cveGru.get()
+        "cveGru": grupo
     })
+    
     messagebox.showinfo("Éxito", "Alumno agregado correctamente")
     ent_cveAlu.delete(0, tk.END)
     ent_nomAlu.delete(0, tk.END)
     ent_edaAlu.delete(0, tk.END)
     ent_cveGru.delete(0, tk.END)
 
+
 # Función para actualizar alumno
 def Actualizar(ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru):
-    if not ent_cveAlu.get():
+    clave = ent_cveAlu.get().strip()
+    nombre = ent_nomAlu.get().strip()
+    edad = ent_edaAlu.get().strip()
+    grupo = ent_cveGru.get().strip()
+
+    if not clave:
         messagebox.showerror("Error", "Por favor, ingresa la clave del alumno a actualizar")
         return
-    if not ent_nomAlu.get():
+    if not nombre:
         messagebox.showerror("Error", "Por favor, ingresa el nuevo nombre del alumno")
         return
-    if not ent_edaAlu.get():
+    if not edad:
         messagebox.showerror("Error", "Por favor, ingresa la nueva edad del alumno")
         return
-    if not ent_cveGru.get():
+    if not grupo:
         messagebox.showerror("Error", "Por favor, ingresa la clave del grupo")
         return
     
     try:
-        cveAlu_int = int(ent_cveAlu.get())
-        edaAlu_int = int(ent_edaAlu.get())
+        cveAlu_int = int(clave)
+        edaAlu_int = int(edad)
     except ValueError:
-        messagebox.showerror("Error", "La clave y edad deben ser números")
+        messagebox.showerror("Error", "La clave y la edad deben ser numéricos.")
         return
     
-    # Validar que el grupo exista
-    if not validarGrupo(ent_cveGru.get()):
-        messagebox.showerror("Error", "El grupo ingresado no existe")
+    if not validarGrupo(grupo):
+        messagebox.showerror("Error", "El grupo ingresado no existe.")
         return
     
     if Alumnos.find_one({"cveAlu": cveAlu_int}) is None:
-        messagebox.showerror("Error", "No se encontró un alumno con la clave proporcionada")
+        messagebox.showerror("Error", "No se encontró un alumno con la clave proporcionada.")
         return
     
     Alumnos.update_one(
         {"cveAlu": cveAlu_int}, 
         {"$set": {
-            "nomAlu": ent_nomAlu.get(),
+            "nomAlu": nombre,
             "edaAlu": edaAlu_int,
-            "cveGru": ent_cveGru.get()
+            "cveGru": grupo
         }}
     )
+    
     messagebox.showinfo("Éxito", "Alumno actualizado correctamente")
     ent_cveAlu.delete(0, tk.END)
     ent_nomAlu.delete(0, tk.END)
     ent_edaAlu.delete(0, tk.END)
     ent_cveGru.delete(0, tk.END)
 
-#Función para ver alumno
-def VerUnAlumno(ent_cveAlu):
+
+# Función para ver alumno (Corregida para aceptar los 4 parámetros)
+def VerUnAlumno(ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru):
     clave = ent_cveAlu.get().strip()
     
+    # Si ingresaron una clave, busca a ese alumno específico
     if clave:
         try:
             cveAlu_int = int(clave)
@@ -124,34 +138,35 @@ def VerUnAlumno(ent_cveAlu):
                 resumen = f"Clave: {Alumno_Existente['cveAlu']}\nNombre: {Alumno_Existente['nomAlu']}\nEdad: {Alumno_Existente['edaAlu']}\nGrupo: {Alumno_Existente['cveGru']}"
                 messagebox.showinfo("Datos del Alumno", resumen)
         except ValueError:
-            messagebox.showerror("Error", "La clave debe ser un número")
-    else:
+            messagebox.showerror("Error", "La clave debe ser un número entero.")
+            
+    # Si la clave está vacía, comprobamos si todo está vacío para mostrar la lista completa
+    elif not ent_nomAlu.get().strip() and not ent_edaAlu.get().strip() and not ent_cveGru.get().strip():
         lista_alumnos = list(Alumnos.find())
         if not lista_alumnos:
-            messagebox.showinfo("Alumnos", "No hay alumnos registrados")
+            messagebox.showinfo("Alumnos", "No hay alumnos registrados.")
             return
         
-        listado = "--Listado de todos los alumnos --\n\n"
+        listado = "-- Listado de todos los alumnos --\n\n"
         for alumno in lista_alumnos:
             listado += f"Clave: {alumno['cveAlu']} | Nombre: {alumno['nomAlu']} | Edad: {alumno['edaAlu']} | Grupo: {alumno['cveGru']}\n"
         messagebox.showinfo("Todos los alumnos", listado)
+    else:
+        messagebox.showwarning("Atención", "Para buscar un alumno, ingresa solo su Clave.\nPara ver todos los alumnos, deja todos los campos vacíos.")
 
-#Limpiar Alumno
+
+# Limpiar Alumno
 def Limpiar(ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru):
-    clave = ent_cveAlu.get()
-    nombre = ent_nomAlu.get()
-    edad = ent_edaAlu.get()
-    grupo = ent_cveGru.get()
-    
-    if not clave and not nombre and not edad and not grupo:
-        messagebox.showerror("Atención", "No hay nada para limpiar")
+    if not ent_cveAlu.get() and not ent_nomAlu.get() and not ent_edaAlu.get() and not ent_cveGru.get():
+        messagebox.showerror("Atención", "Los campos ya están limpios.")
     else:
         ent_cveAlu.delete(0, tk.END)
         ent_nomAlu.delete(0, tk.END)
         ent_edaAlu.delete(0, tk.END)
         ent_cveGru.delete(0, tk.END)
 
-#Eliminar Alumno
+
+# Eliminar Alumno
 def EliminarAlumno(ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru): 
     clave = ent_cveAlu.get().strip()
     
@@ -166,14 +181,16 @@ def EliminarAlumno(ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru):
             else:
                 Alumnos.delete_one({"cveAlu": cveAlu_int})
                 messagebox.showinfo("Éxito", "Alumno eliminado exitosamente")
+                
+                # Limpiamos todos los campos al terminar
                 ent_cveAlu.delete(0, tk.END)
                 ent_nomAlu.delete(0, tk.END)
                 ent_edaAlu.delete(0, tk.END)
                 ent_cveGru.delete(0, tk.END)
         except ValueError:
-            messagebox.showerror("Error", "La clave debe ser un número")
+            messagebox.showerror("Error", "La clave debe ser un número entero.")
     else:
-        messagebox.showerror("Error", "Por favor ingresa la clave del alumno a eliminar")
+        messagebox.showerror("Error", "Por favor ingresa la clave del alumno a eliminar.")
         
 # 1. Eliminar todos los alumnos
 def eliminarTodosLosAlumnos():

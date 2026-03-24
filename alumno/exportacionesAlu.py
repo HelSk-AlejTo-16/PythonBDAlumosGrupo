@@ -1,8 +1,8 @@
 import csv
 import json
 import os
-from operaciones import generarNombreArchivo
-from db import Alumnos
+from operacionesAlu import generarNombreArchivo
+from dbAlu import Alumnos
 from tkinter import messagebox
 import datetime
 import xml.etree.ElementTree as ET

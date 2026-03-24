@@ -3,7 +3,7 @@ import json
 import xml.etree.ElementTree as ET
 from tkinter import filedialog, messagebox
 # Asegúrate de importar Alumnos desde tu db.py
-from db import Alumnos 
+from dbAlu import Alumnos 
 
 # Importar CSV de Alumnos (Estructura Real)
 def importarCsvAlumnos():

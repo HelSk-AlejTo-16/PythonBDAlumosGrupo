@@ -1,107 +1,129 @@
 import tkinter as tk
 from tkinter import messagebox
-from alumno.operaciones import ejecutarBackupAlumnos, eliminarTodosLosAlumnos, restaurarTodosLosAlumnos, Agregar, Actualizar, VerUnAlumno, Limpiar, EliminarAlumno
-from alumno.db import Alumnos 
 from functools import partial
-from alumno.importaciones import importarXmlAlumnos, importarJsonAlumnos, importarCsvAlumnos
-from alumno.exportaciones import exportarCsv, exportarJson, exportarXml
 
+# CORRECCIÓN DE IMPORTACIONES: 
+# Como ya estás dentro de la carpeta "alumno", no necesitas el prefijo "alumno."
+from dbAlu import Alumnos 
+from operacionesAlu import ejecutarBackupAlumnos, eliminarTodosLosAlumnos, restaurarTodosLosAlumnos, Agregar, Actualizar, VerUnAlumno, Limpiar, EliminarAlumno
+from importacionesAlu import importarXmlAlumnos, importarJsonAlumnos, importarCsvAlumnos
+from exportacionesAlu import exportarCsv, exportarJson, exportarXml
+
+# --- Configuración principal de la ventana ---
 ventana = tk.Tk()
-ventana.title("Gestión de Alumnos")
-ventana.geometry("900x500")
+ventana.title("Administración de Alumnos")
+# Le di un poco más de altura (700) porque tenemos más campos que en grupos
+ventana.geometry("700x700")
 ventana.resizable(0, 0)
-ventana.config(cursor="hand2")
 
-# Label - Bienvenida
-lbl_Bienvenido = tk.Label(ventana, text="Gestión de Alumnos", font=("Arial", 14, "bold"))
-lbl_Bienvenido.grid(row=0, column=0, columnspan=3, pady=10)
+# Paleta de colores
+COLOR_FONDO = "#f0f0f0"       
+COLOR_FRAME = "#ffffff"       
+COLOR_TEXTO = "#333333"       
+COLOR_BTN = "#e0e0e0"         
+COLOR_BTN_PELIGRO = "#ffe6e6" 
 
-# Label - Clave del alumno
-lbl_cveAlu = tk.Label(ventana, text="Clave:", font=("Arial", 11, "bold"))
-lbl_cveAlu.grid(row=1, column=0, sticky="e", padx=5)
+ventana.configure(bg=COLOR_FONDO)
 
-# Label - Nombre del alumno
-lbl_nomAlu = tk.Label(ventana, text="Nombre:", font=("Arial", 11, "bold"))
-lbl_nomAlu.grid(row=2, column=0, sticky="e", padx=5)
+# --- Título Superior ---
+lbl_titulo = tk.Label(ventana, text="Gestión de Alumnos", font=("Segoe UI", 16, "bold"), bg=COLOR_FONDO, fg=COLOR_TEXTO)
+lbl_titulo.pack(pady=(15, 5))
 
-# Label - Edad del alumno
-lbl_edaAlu = tk.Label(ventana, text="Edad:", font=("Arial", 11, "bold"))
-lbl_edaAlu.grid(row=3, column=0, sticky="e", padx=5)
+lbl_Bienvenido = tk.Label(ventana, text="Bienvenido(a) al sistema", font=("Segoe UI", 10), bg=COLOR_FONDO, fg="#666666")
+lbl_Bienvenido.pack(pady=(0, 15))
 
-# Label - Clave del grupo
-lbl_cveGru = tk.Label(ventana, text="Grupo:", font=("Arial", 11, "bold"))
-lbl_cveGru.grid(row=4, column=0, sticky="e", padx=5)
 
-# Entry - Clave del alumno
-ent_cveAlu = tk.Entry(ventana, width=30)
-ent_cveAlu.grid(row=1, column=1, padx=10, pady=5)
+# ==============================================================================
+# SECCIÓN 1: DATOS Y OPERACIONES BÁSICAS
+# ==============================================================================
+frame_datos = tk.LabelFrame(ventana, text="Datos del Alumno", font=("Segoe UI", 10, "bold"), bg=COLOR_FRAME, padx=20, pady=10, relief="groove", borderwidth=2)
+frame_datos.pack(fill="x", padx=20, pady=5)
 
-# Entry - Nombre del alumno
-ent_nomAlu = tk.Entry(ventana, width=30)
-ent_nomAlu.grid(row=2, column=1, padx=10, pady=5)
+# Frame interno invisible para centrar
+inner_datos = tk.Frame(frame_datos, bg=COLOR_FRAME)
+inner_datos.pack(anchor="center", pady=5)
 
-# Entry - Edad del alumno
-ent_edaAlu = tk.Entry(ventana, width=30)
-ent_edaAlu.grid(row=3, column=1, padx=10, pady=5)
+# Fila 0: Clave y Botón Buscar
+lbl_cveAlu = tk.Label(inner_datos, text="Clave:", font=("Segoe UI", 10, "bold"), bg=COLOR_FRAME)
+lbl_cveAlu.grid(row=0, column=0, sticky="e", pady=5)
+ent_cveAlu = tk.Entry(inner_datos, width=25, font=("Segoe UI", 10))
+ent_cveAlu.grid(row=0, column=1, padx=10, pady=5, sticky="w")
 
-# Entry - Clave del grupo
-ent_cveGru = tk.Entry(ventana, width=30)
-ent_cveGru.grid(row=4, column=1, padx=10, pady=5)
+# Fila 1: Nombre y Botón Limpiar
+lbl_nomAlu = tk.Label(inner_datos, text="Nombre:", font=("Segoe UI", 10, "bold"), bg=COLOR_FRAME)
+lbl_nomAlu.grid(row=1, column=0, sticky="e", pady=5)
+ent_nomAlu = tk.Entry(inner_datos, width=25, font=("Segoe UI", 10))
+ent_nomAlu.grid(row=1, column=1, padx=10, pady=5, sticky="w")
 
-# Botón Agregar
-btn_Agregar = tk.Button(ventana, text="Agregar", font=("Arial", 12, "bold"), bg="white", fg="black", command=partial(Agregar, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
-btn_Agregar.grid(row=1, column=2, padx=10, pady=5)
+# Fila 2: Edad
+lbl_edaAlu = tk.Label(inner_datos, text="Edad:", font=("Segoe UI", 10, "bold"), bg=COLOR_FRAME)
+lbl_edaAlu.grid(row=2, column=0, sticky="e", pady=5)
+ent_edaAlu = tk.Entry(inner_datos, width=25, font=("Segoe UI", 10))
+ent_edaAlu.grid(row=2, column=1, padx=10, pady=5, sticky="w")
 
-# Botón Actualizar
-btn_Actualizar = tk.Button(ventana, text="Actualizar", font=("Arial", 12, "bold"), bg="white", fg="black", command=partial(Actualizar, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
-btn_Actualizar.grid(row=2, column=2, padx=10, pady=5)
+# Fila 3: Clave del Grupo
+lbl_cveGru = tk.Label(inner_datos, text="Grupo:", font=("Segoe UI", 10, "bold"), bg=COLOR_FRAME)
+lbl_cveGru.grid(row=3, column=0, sticky="e", pady=5)
+ent_cveGru = tk.Entry(inner_datos, width=25, font=("Segoe UI", 10))
+ent_cveGru.grid(row=3, column=1, padx=10, pady=5, sticky="w")
 
-# Botón Buscar
-btn_buscarAlumno = tk.Button(ventana, text="Buscar", font=("Arial", 12, "bold"), bg="white", fg="black", command=partial(VerUnAlumno, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
-btn_buscarAlumno.grid(row=3, column=2, padx=10, pady=5)
+# Botones Buscar y Limpiar acomodados a la derecha
+btn_buscarAlumno = tk.Button(inner_datos, text="Buscar", font=("Segoe UI", 9), bg=COLOR_BTN, width=12, command=partial(VerUnAlumno, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
+btn_buscarAlumno.grid(row=0, column=2, padx=5, pady=5)
 
-# Botón Limpiar
-btn_limpiar = tk.Button(ventana, text="Limpiar", font=("Arial", 12, "bold"), bg="white", fg="black", command=partial(Limpiar, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
-btn_limpiar.grid(row=4, column=2, padx=10, pady=5)
+btn_limpiar = tk.Button(inner_datos, text="Limpiar", font=("Segoe UI", 9), bg=COLOR_BTN, width=12, command=partial(Limpiar, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
+btn_limpiar.grid(row=1, column=2, padx=5, pady=5)
 
-# Botón Eliminar
-btn_eliminarAlumno = tk.Button(ventana, text="Eliminar", font=("Arial", 12, "bold"), bg="white", fg="black", command=partial(EliminarAlumno, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
-btn_eliminarAlumno.grid(row=5, column=2, padx=10, pady=5)
+# Fila 4: Botones de Acción centrados abajo
+frame_acciones = tk.Frame(inner_datos, bg=COLOR_FRAME)
+frame_acciones.grid(row=4, column=0, columnspan=3, pady=(15, 0))
 
-# Botón Exportar CSV
-btn_exportarCsv = tk.Button(ventana, text="Exportar CSV", font=("Arial", 12, "bold"), bg="white", fg="black", command=exportarCsv)
-btn_exportarCsv.grid(row=6, column=0, padx=10, pady=10)
+btn_Agregar = tk.Button(frame_acciones, text="Agregar", font=("Segoe UI", 10, "bold"), bg="#d4edda", width=12, command=partial(Agregar, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
+btn_Agregar.pack(side="left", padx=5)
 
-# Botón Exportar JSON
-btn_exportarJson = tk.Button(ventana, text="Exportar JSON", font=("Arial", 12, "bold"), bg="white", fg="black", command=exportarJson)
-btn_exportarJson.grid(row=6, column=1, padx=10, pady=10)
+btn_Actualizar = tk.Button(frame_acciones, text="Actualizar", font=("Segoe UI", 10, "bold"), bg="#cce5ff", width=12, command=partial(Actualizar, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
+btn_Actualizar.pack(side="left", padx=5)
 
-# Botón Exportar XML
-btn_exportarXml = tk.Button(ventana, text="Exportar XML", font=("Arial", 12, "bold"), bg="white", fg="black", command=exportarXml)
-btn_exportarXml.grid(row=6, column=2, padx=10, pady=10)
+btn_eliminarAlumno = tk.Button(frame_acciones, text="Eliminar", font=("Segoe UI", 10, "bold"), bg=COLOR_BTN_PELIGRO, width=12, command=partial(EliminarAlumno, ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru))
+btn_eliminarAlumno.pack(side="left", padx=5)
 
-## Botón importar CSV
-btn_importarCsv = tk.Button(ventana, text="Importar csv", font=("Arial",12, "bold"), bg="white", fg="black", command=importarCsvAlumnos)
-btn_importarCsv.grid(row=5, column=0, padx=10, pady=5)
 
-## Botón importar JSON
-btn_importarJson = tk.Button(ventana, text="Importar json", font=("Arial",12, "bold"), bg="white", fg="black", command=importarJsonAlumnos)
-btn_importarJson.grid(row=5, column=1, padx=10, pady=5)
+# ==============================================================================
+# SECCIÓN 2: IMPORTAR Y EXPORTAR (Archivos)
+# ==============================================================================
+frame_archivos = tk.LabelFrame(ventana, text="Manejo de Archivos (I/O)", font=("Segoe UI", 10, "bold"), bg=COLOR_FRAME, padx=20, pady=10, relief="groove", borderwidth=2)
+frame_archivos.pack(fill="x", padx=20, pady=10)
 
-## Botón importar XML
-btn_importarXml = tk.Button(ventana, text="Importar xml", font=("Arial",12, "bold"), bg="white", fg="black", command=importarXmlAlumnos)
-btn_importarXml.grid(row=5, column=2, padx=10, pady=5)
+inner_archivos = tk.Frame(frame_archivos, bg=COLOR_FRAME)
+inner_archivos.pack(anchor="center", pady=5)
 
-# Botón Backup
-btn_backup = tk.Button(ventana, text="Ejecutar Backup", font=("Arial", 12, "bold"), bg="white", fg="black", command=ejecutarBackupAlumnos)
-btn_backup.grid(row=7, column=0, columnspan=3, sticky="we", padx=10, pady=10)
+tk.Label(inner_archivos, text="Exportar a:", font=("Segoe UI", 9), bg=COLOR_FRAME).grid(row=0, column=0, sticky="e", padx=(0,10), pady=5)
+tk.Button(inner_archivos, text="CSV", font=("Segoe UI", 9), bg=COLOR_BTN, width=10, command=exportarCsv).grid(row=0, column=1, padx=5, pady=5)
+tk.Button(inner_archivos, text="JSON", font=("Segoe UI", 9), bg=COLOR_BTN, width=10, command=exportarJson).grid(row=0, column=2, padx=5, pady=5)
+tk.Button(inner_archivos, text="XML", font=("Segoe UI", 9), bg=COLOR_BTN, width=10, command=exportarXml).grid(row=0, column=3, padx=5, pady=5)
 
-# Botón Eliminar todos los Grupos
-btn_eliminarTodos = tk.Button(ventana, text="Eliminar todos los Grupos", font=("Arial",12, "bold"), bg="white", fg="black", command=eliminarTodosLosAlumnos)
-btn_eliminarTodos.grid(row=7, column=0, columnspan=3, sticky="we", padx=10, pady=5)
+tk.Label(inner_archivos, text="Importar de:", font=("Segoe UI", 9), bg=COLOR_FRAME).grid(row=1, column=0, sticky="e", padx=(0,10), pady=5)
+tk.Button(inner_archivos, text="CSV", font=("Segoe UI", 9), bg=COLOR_BTN, width=10, command=importarCsvAlumnos).grid(row=1, column=1, padx=5, pady=5)
+tk.Button(inner_archivos, text="JSON", font=("Segoe UI", 9), bg=COLOR_BTN, width=10, command=importarJsonAlumnos).grid(row=1, column=2, padx=5, pady=5)
+tk.Button(inner_archivos, text="XML", font=("Segoe UI", 9), bg=COLOR_BTN, width=10, command=importarXmlAlumnos).grid(row=1, column=3, padx=5, pady=5)
 
-# Botón Restaurar todos los Grupos
-btn_restaurarTodos = tk.Button(ventana, text="Restaurar todos los Grupos", font=("Arial",12, "bold"), bg="white", fg="black", command=restaurarTodosLosAlumnos)
-btn_restaurarTodos.grid(row=8, column=0, columnspan=3, sticky="we", padx=10, pady=5)
+
+# ==============================================================================
+# SECCIÓN 3: ADMINISTRACIÓN DE BASE DE DATOS (Backup)
+# ==============================================================================
+frame_db = tk.LabelFrame(ventana, text="Administración de Base de Datos", font=("Segoe UI", 10, "bold"), bg=COLOR_FRAME, padx=20, pady=10, relief="groove", borderwidth=2)
+frame_db.pack(fill="x", padx=20, pady=5)
+
+inner_db = tk.Frame(frame_db, bg=COLOR_FRAME)
+inner_db.pack(anchor="center", pady=5)
+
+btn_backup = tk.Button(inner_db, text="Ejecutar Backup de Alumnos", font=("Segoe UI", 10), bg="#e2e3e5", width=45, command=ejecutarBackupAlumnos)
+btn_backup.pack(pady=(0, 5))
+
+btn_restaurarTodos = tk.Button(inner_db, text="Restaurar Backup", font=("Segoe UI", 10), bg="#e2e3e5", width=45, command=restaurarTodosLosAlumnos)
+btn_restaurarTodos.pack(pady=5)
+
+btn_eliminarTodos = tk.Button(inner_db, text="Eliminar Todos los Alumnos", font=("Segoe UI", 10, "bold"), bg=COLOR_BTN_PELIGRO, fg="#cc0000", width=45, command=eliminarTodosLosAlumnos)
+btn_eliminarTodos.pack(pady=(5, 0))
 
 ventana.mainloop()
