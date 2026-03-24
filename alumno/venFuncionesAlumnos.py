@@ -1,9 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
-from db import Alumnos 
+from alumno.operaciones import ejecutarBackupAlumnos, eliminarTodosLosAlumnos, restaurarTodosLosAlumnos, Agregar, Actualizar, VerUnAlumno, Limpiar, EliminarAlumno
+from alumno.db import Alumnos 
 from functools import partial
-from operaciones import Agregar, Actualizar, VerUnAlumno, Limpiar, EliminarAlumno
-from exportaciones import exportarCsv, exportarJson, ejecutarBackup, exportarXml
+from alumno.importaciones import importarXmlAlumnos, importarJsonAlumnos, importarCsvAlumnos
+from alumno.exportaciones import exportarCsv, exportarJson, exportarXml
 
 ventana = tk.Tk()
 ventana.title("Gestión de Alumnos")
@@ -79,8 +80,28 @@ btn_exportarJson.grid(row=6, column=1, padx=10, pady=10)
 btn_exportarXml = tk.Button(ventana, text="Exportar XML", font=("Arial", 12, "bold"), bg="white", fg="black", command=exportarXml)
 btn_exportarXml.grid(row=6, column=2, padx=10, pady=10)
 
+## Botón importar CSV
+btn_importarCsv = tk.Button(ventana, text="Importar csv", font=("Arial",12, "bold"), bg="white", fg="black", command=importarCsvAlumnos)
+btn_importarCsv.grid(row=5, column=0, padx=10, pady=5)
+
+## Botón importar JSON
+btn_importarJson = tk.Button(ventana, text="Importar json", font=("Arial",12, "bold"), bg="white", fg="black", command=importarJsonAlumnos)
+btn_importarJson.grid(row=5, column=1, padx=10, pady=5)
+
+## Botón importar XML
+btn_importarXml = tk.Button(ventana, text="Importar xml", font=("Arial",12, "bold"), bg="white", fg="black", command=importarXmlAlumnos)
+btn_importarXml.grid(row=5, column=2, padx=10, pady=5)
+
 # Botón Backup
-btn_backup = tk.Button(ventana, text="Ejecutar Backup", font=("Arial", 12, "bold"), bg="white", fg="black", command=ejecutarBackup)
+btn_backup = tk.Button(ventana, text="Ejecutar Backup", font=("Arial", 12, "bold"), bg="white", fg="black", command=ejecutarBackupAlumnos)
 btn_backup.grid(row=7, column=0, columnspan=3, sticky="we", padx=10, pady=10)
+
+# Botón Eliminar todos los Grupos
+btn_eliminarTodos = tk.Button(ventana, text="Eliminar todos los Grupos", font=("Arial",12, "bold"), bg="white", fg="black", command=eliminarTodosLosAlumnos)
+btn_eliminarTodos.grid(row=7, column=0, columnspan=3, sticky="we", padx=10, pady=5)
+
+# Botón Restaurar todos los Grupos
+btn_restaurarTodos = tk.Button(ventana, text="Restaurar todos los Grupos", font=("Arial",12, "bold"), bg="white", fg="black", command=restaurarTodosLosAlumnos)
+btn_restaurarTodos.grid(row=8, column=0, columnspan=3, sticky="we", padx=10, pady=5)
 
 ventana.mainloop()

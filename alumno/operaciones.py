@@ -1,7 +1,8 @@
 import os
-from datetime import datetime 
+from datetime import datetime
+import subprocess 
 from db import Alumnos, Grupos
-from tkinter import messagebox
+from tkinter import filedialog, messagebox
 import tkinter as tk
 
 ##Método para todos
@@ -173,3 +174,93 @@ def EliminarAlumno(ent_cveAlu, ent_nomAlu, ent_edaAlu, ent_cveGru):
             messagebox.showerror("Error", "La clave debe ser un número")
     else:
         messagebox.showerror("Error", "Por favor ingresa la clave del alumno a eliminar")
+        
+# 1. Eliminar todos los alumnos
+def eliminarTodosLosAlumnos():
+    # Siempre es buena práctica pedir confirmación antes de vaciar una colección
+    respuesta = messagebox.askyesno(
+        "Confirmar Eliminación", 
+        "¿Estás seguro de que deseas eliminar TODOS los alumnos?\n\nEsta acción no se puede deshacer."
+    )
+    
+    if respuesta:
+        try:
+            # Un filtro vacío {} borra todos los documentos de la colección
+            resultado = Alumnos.delete_many({})
+            messagebox.showinfo("Éxito", f"Se han eliminado {resultado.deleted_count} alumnos de la base de datos.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error al vaciar la colección: {e}")
+
+
+# 2. Ejecutar Backup de Alumnos (mongodump)
+def ejecutarBackupAlumnos():
+    # Seleccionar dónde guardar la carpeta de respaldo
+    carpeta_destino = filedialog.askdirectory(
+        title="Selecciona la carpeta para guardar el Backup de Alumnos"
+    )
+    
+    if not carpeta_destino:
+        return 
+        
+    # Crear nombre de carpeta con fecha y hora
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    ruta_backup = os.path.join(carpeta_destino, f"backup_alumnos_{timestamp}")
+    
+    try:
+        # Usamos --collection=Alumno para no mezclar con la colección Grupos
+        comando = [
+            "mongodump",
+            "--db=BD_GrupoAlumno",
+            "--collection=Alumno",
+            f"--out={ruta_backup}"
+        ]
+        
+        resultado = subprocess.run(comando, capture_output=True, text=True)
+        
+        if resultado.returncode == 0:
+            messagebox.showinfo("Backup Exitoso", f"Respaldo de Alumnos generado correctamente en:\n{ruta_backup}")
+        else:
+            messagebox.showerror("Error en Backup", f"Hubo un problema al generar el backup:\n{resultado.stderr}")
+            
+    except FileNotFoundError:
+        messagebox.showerror("Error", "No se encontró el comando 'mongodump'. Asegúrate de tener las MongoDB Database Tools instaladas y en el PATH.")
+    except Exception as e:
+        messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")
+
+
+# 3. Restaurar todos los Alumnos (mongorestore)
+def restaurarTodosLosAlumnos():
+    # Para restaurar una sola colección, el usuario debe seleccionar el archivo .bson generado
+    ruta_archivo_bson = filedialog.askopenfilename(
+        title="Selecciona el archivo Alumno.bson para restaurar",
+        filetypes=(("Archivos BSON de MongoDB", "*.bson"), ("Todos los archivos", "*.*"))
+    )
+    
+    if not ruta_archivo_bson:
+        return 
+
+    respuesta = messagebox.askyesno(
+        "Confirmar Restauración", 
+        f"¿Deseas restaurar la colección de Alumnos desde este archivo?\n\n{ruta_archivo_bson}"
+    )
+
+    if respuesta:
+        try:
+            comando = [
+                "mongorestore",
+                "--db=BD_GrupoAlumno",
+                "--collection=Alumno",
+                ruta_archivo_bson
+            ]
+
+            resultado = subprocess.run(comando, capture_output=True, text=True)
+
+            if resultado.returncode == 0:
+                messagebox.showinfo("Restauración Exitosa", "El backup de alumnos se ha restaurado correctamente.")
+            else:
+                messagebox.showerror("Error de Restauración", f"Hubo un problema:\n{resultado.stderr}")
+
+        except FileNotFoundError:
+            messagebox.showerror("Herramienta no encontrada", "No se encontró el comando 'mongorestore'.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error inesperado: {e}")

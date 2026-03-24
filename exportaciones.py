@@ -1,10 +1,11 @@
 import csv
 import json
 import os
+import subprocess
 from operaciones import generarNombreArchivo
 from db import Grupos
-from tkinter import messagebox
-import datetime
+from tkinter import filedialog, messagebox
+from datetime import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
@@ -89,29 +90,36 @@ def exportarXml():
 
 
 def ejecutarBackup():
-    grupos = list(Grupos.find())
- 
-    if not grupos:
-        messagebox.showwarning("Atención", "No hay grupos para respaldar.")
-        return
- 
-    # Crear carpeta backups/ si no existe
-    carpeta_backup = r"C:\Backup_Mongo\Backups_Grupos"
-    os.makedirs(carpeta_backup, exist_ok=True)
- 
-    # Subcarpeta con timestamp para este backup
+    # 1. Abrir ventana para que el usuario elija dónde guardar
+    carpeta_destino = filedialog.askdirectory(
+        title="Selecciona la carpeta para guardar el Backup"
+    )
+    
+    # Si el usuario cierra la ventana o cancela, detenemos la función
+    if not carpeta_destino:
+        return 
+        
+    # 2. Crear un nombre de carpeta único usando la fecha y hora
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    subcarpeta = os.path.join(carpeta_backup, f"backup_{timestamp}")
-    os.makedirs(subcarpeta)
- 
-    # Convertir ObjectId a string
-    for grupo in grupos:
-        grupo["_id"] = str(grupo["_id"])
- 
-    # Guardar como JSON dentro de la subcarpeta
-    ruta_archivo = os.path.join(subcarpeta, "grupos.json")
-    with open(ruta_archivo, mode="w", encoding="utf-8") as archivo:
-        json.dump(grupos, archivo, ensure_ascii=False, indent=4)
- 
-    ruta = os.path.abspath(subcarpeta)
-    messagebox.showinfo("Backup exitoso", f"Backup realizado correctamente.\nUbicación:\n{ruta}")
+    ruta_backup = os.path.join(carpeta_destino, f"backup_{timestamp}")
+    
+    try:
+        # 3. Construir el comando mongodump
+        comando = [
+            "mongodump",
+            "--db=BD_GrupoAlumno",
+            f"--out={ruta_backup}"
+        ]
+        
+        # 4. Ejecutar el comando en la consola de manera invisible
+        resultado = subprocess.run(comando, capture_output=True, text=True)
+        
+        if resultado.returncode == 0:
+            messagebox.showinfo("Backup Exitoso", f"Respaldo de la base de datos generado correctamente en:\n{ruta_backup}")
+        else:
+            messagebox.showerror("Error en Backup", f"Hubo un problema al generar el backup:\n{resultado.stderr}")
+            
+    except FileNotFoundError:
+        messagebox.showerror("Error", "No se encontró el comando 'mongodump'. Asegúrate de tener instaladas las MongoDB Database Tools y agregadas al PATH.")
+    except Exception as e:
+        messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")

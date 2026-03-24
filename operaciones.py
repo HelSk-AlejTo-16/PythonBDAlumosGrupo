@@ -1,7 +1,8 @@
 import os
-from datetime import datetime 
+from datetime import datetime
+import subprocess 
 from db import Grupos, Alumnos
-from tkinter import messagebox
+from tkinter import filedialog, messagebox
 import tkinter as tk
 
 ##Método para todos
@@ -121,3 +122,60 @@ def EliminarGrupo(ent_cveGru, ent_nomGru):
 
     else:
         messagebox.showerror("Error", "Llene los dos apartados.")
+        
+        
+# Eliminar todos los grupos
+def eliminarTodosLosGrupos():
+    # Es crucial pedir confirmación antes de una acción destructiva
+    respuesta = messagebox.askyesno(
+        "Confirmar Eliminación", 
+        "¿Estás seguro de que deseas eliminar TODOS los grupos?\n\nEsta acción no se puede deshacer."
+    )
+    
+    if respuesta:
+        try:
+            # delete_many({}) con un filtro vacío elimina todos los documentos de la colección
+            resultado = Grupos.delete_many({})
+            messagebox.showinfo("Éxito", f"Se han eliminado {resultado.deleted_count} grupos de la base de datos.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error al vaciar la colección: {e}")
+
+
+# Restaurar backup usando mongorestore
+def restaurarTodosLosGrupos():
+    # Abrimos una ventana para que el usuario seleccione la carpeta del backup
+    ruta_backup = filedialog.askdirectory(
+        title="Selecciona la carpeta del Backup (Ej: BD_GrupoAlumno)"
+    )
+    
+    if not ruta_backup:
+        return # Si el usuario cancela, salimos de la función
+
+    respuesta = messagebox.askyesno(
+        "Confirmar Restauración", 
+        f"¿Deseas restaurar la base de datos desde la siguiente ruta?\n\n{ruta_backup}\n\nNota: Los datos existentes podrían sobrescribirse."
+    )
+
+    if respuesta:
+        try:
+            # Construimos el comando como una lista de argumentos
+            comando = [
+                "mongorestore",
+                "--db=BD_GrupoAlumno",
+                f"--dir={ruta_backup}"
+            ]
+
+            # subprocess.run ejecuta el comando en la consola de Windows
+            resultado = subprocess.run(comando, capture_output=True, text=True)
+
+            # Si returncode es 0, el comando se ejecutó sin errores fatales
+            if resultado.returncode == 0:
+                messagebox.showinfo("Restauración Exitosa", "El backup se ha restaurado correctamente en la base de datos.")
+            else:
+                # mongorestore suele arrojar sus mensajes en stderr
+                messagebox.showerror("Error de Restauración", f"Hubo un problema durante la restauración:\n{resultado.stderr}")
+
+        except FileNotFoundError:
+            messagebox.showerror("Herramienta no encontrada", "No se encontró el comando 'mongorestore'. Asegúrate de tener instaladas las MongoDB Database Tools y agregadas a las variables de entorno (PATH) de Windows.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error inesperado: {e}")
